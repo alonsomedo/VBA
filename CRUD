@@ -1,0 +1,152 @@
+    Dim rs As New ADODB.Recordset
+    Dim cmd As New ADODB.Command
+    Dim cadenaconexion As String
+    Dim conn As ADODB.Connection
+
+Public Function GetConStringIntecom()
+    GetConStringIntecom = "Driver={SQL Server};Server=;Database=BD_ICPT;Uid=;Pwd=;"
+End Function
+
+Public Function GetOpenConnection() As ADODB.Connection
+    Dim con As New ADODB.Connection
+    With con
+        .ConnectionString = GetConStringIntecom()
+        .CommandTimeout = 0
+        .Open
+    End With
+    Set GetOpenConnection = con
+End Function
+
+Public Function Abrir_Conexion(ByVal connstr As String)
+    Dim conn As New ADODB.Connection
+     With conn
+            .ConnectionString = connstr
+            .ConnectionTimeout = 150
+            .Open
+     End With
+    Abrir_Conexion = conn
+End Function
+
+Public Sub IngresarDatos()
+Dim endRow As Long
+Dim ticket As String
+Dim monto As Long
+Dim mescod As Long
+Dim producto As String
+Dim i As Long
+Dim z As String
+  
+Set conn = New ADODB.Connection
+Set conn = GetOpenConnection()
+Set rs = New ADODB.Recordset
+Set cmd = New ADODB.Command
+
+If Range("B19").Value = "" Then
+    MsgBox ("No hay registros para cargar!!")
+    Exit Sub
+End If
+
+If Range("ColumnaInicial").End(xlDown) <> "" And Range("J1") = 0 Then
+    numFilas = (Range("ColumnaInicial").End(xlDown).Row - Range("ColumnaInicial").Row)
+    endRow = numFilas + 19
+    For i = 19 To endRow
+    ticket = Trim(Range("B" & CStr(i)).Value)
+    mescod = Val(Range("C" & CStr(i)).Value)
+    monto = Val(Range("D" & CStr(i)).Value)
+    producto = Trim(Range("E" & CStr(i)).Value)
+    cmd.ActiveConnection = conn
+    cmd.CommandType = adCmdText
+    cmd.CommandText = "EXEC SP_INSERTARDATA '" & ticket & "'," & mescod & "," & monto & ", '" & producto & "'"
+    cmd.Execute
+    Next i
+Else
+    MsgBox "La informacion ya se encuentra en la BD, por favor limpiar los campos"
+End If
+
+End Sub
+
+Sub listarData()
+    Set conn = New ADODB.Connection
+    Set conn = GetOpenConnection()
+    Set rs = New ADODB.Recordset
+    Set cmd = New ADODB.Command
+
+    rs.Open "EXEC SP_CONSULTARRDATAX2MESES", conn
+    Sheets("AP").Range("Tabla4").CopyFromRecordset rs
+    Set rs = Nothing
+    
+    If Range("B19") <> "" Then
+    Range("J1") = 1
+    Else
+    Range("J1") = 0
+    End If
+    
+End Sub
+
+Sub buscarCliente()
+    Dim ticket As String
+    Set conn = New ADODB.Connection
+    Set conn = GetOpenConnection()
+    Set rs = New ADODB.Recordset
+    Set cmd = New ADODB.Command
+    
+    prem = Sheets("AP").txtTipoP
+    guionm = Sheets("AP").txtGuionEM
+    ticketm = Sheets("AP").txtTicketEM
+    mesm = Sheets("AP").txtMesEM
+    
+    If ticketm = "" Then
+        MsgBox ("Debe ingresar un valor!!")
+        Exit Sub
+    End If
+    
+    rs.Open "EXECUTE SP_BUSCARTICKET '" & prem & guionm & ticketm & "','" & mesm & "'", conn
+    Sheets("AP").Range("Tabla4").CopyFromRecordset rs
+    Set rs = Nothing
+    
+End Sub
+
+Sub eliminarCliente()
+    Set conn = New ADODB.Connection
+    Set conn = GetOpenConnection()
+    Set rs = New ADODB.Recordset
+    Set cmd = New ADODB.Command
+    
+    If Range("B19").Value = "" Then
+        MsgBox ("No hay registros para borrar!!")
+        Exit Sub
+    End If
+
+    If Range("ColumnaInicial").End(xlDown) <> "" And Range("J1") = 0 Then
+        numFilas = (Range("ColumnaInicial").End(xlDown).Row - Range("ColumnaInicial").Row)
+        endRow = numFilas + 19
+        For i = 19 To endRow
+        
+        prem = Sheets("AP").txtTipoP
+        guionm = Sheets("AP").txtGuionEM
+        ticketm = Sheets("AP").txtTicketEM
+        mesm = Sheets("AP").txtMesEM
+        
+        cmd.ActiveConnection = conn
+        cmd.CommandType = adCmdText
+        cmd.CommandText = "EXEC SP_ELIMINARCLIENTE '" & prem & guionm & ticketm & "','" & mesm & "'"
+        cmd.Execute
+        Next i
+        MsgBox "Ticket: " & prem & guionm & ticketm & ", con codigo de mes: " & mesm & " borrado correctamente"
+    End If
+    
+End Sub
+
+Sub consultarPerfil()
+    Dim per As String
+    Set conn = New ADODB.Connection
+    Set conn = GetOpenConnection()
+    Set rs = New ADODB.Recordset
+    Set cmd = New ADODB.Command
+    
+    rs.Open "EXECUTE CONSULTAR_PERFILES '" & Environ("username") & "'", conn
+    Sheets("Consultas").Range("G3").CopyFromRecordset rs
+    Set rs = Nothing
+    
+End Sub
+
