@@ -1,0 +1,35 @@
+
+DECLARE @cols AS NVARCHAR(MAX), @query  AS NVARCHAR(MAX);
+
+SET @cols = STUFF(
+(
+ SELECT
+     ',' + QUOTENAME(CODMES) 
+ FROM
+   (SELECT DISTINCT CODMES
+    FROM HM_PDM
+   ) AS T
+ ORDER BY
+ CODMES
+ FOR XML PATH('')
+ ), 1, 1, '');
+
+ print @cols
+
+
+set @query = 'SELECT CODBANCO, ' + @cols + ' from 
+            (
+                select CODBANCO
+					 , CODMES
+                    , SALDO_FIN_MES
+                from HM_PDM
+				WHERE FAMILIA = ''COLOCACIONES''
+           ) x
+            pivot 
+            (
+                 SUM(SALDO_FIN_MES)
+                for CODMES in (' + @cols + ')
+            ) p '
+
+
+execute(@query)
